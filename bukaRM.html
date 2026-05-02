@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo filtering metode buka RM</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #3b5bdb;
+            --sidebar-bg: #ffffff;
+            --main-bg: #f3f6fb;
+            --text-dark: #1f2937;
+            --text-muted: #6b7280;
+            --border-color: #e5e7eb;
+            --accent-blue: #2563eb;
+            --report-header-blue: #007bff;
+        }
+
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background: var(--main-bg); display: flex; height: 100vh; overflow: hidden; }
+
+        .sidebar { width: 260px; background: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; flex-shrink: 0; }
+        .sidebar-header { padding: 20px; border-bottom: 1px solid #f3f4f6; }
+        .brand { display: flex; align-items: center; gap: 10px; color: var(--primary-blue); font-weight: 700; font-size: 18px; }
+        
+        .sidebar-menu { flex: 1; overflow-y: auto; padding: 10px 0; }
+        .menu-label { padding: 10px 20px; font-size: 13px; font-weight: 500; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; }
+        .menu-label:hover { background: #f9fafb; }
+        
+        .menu-group .submenu { display: none; background: #f9fafb; }
+        .menu-group.open .submenu { display: block; }
+        
+        .menu-group.open > .menu-label { 
+            background: var(--primary-blue); 
+            color: white; 
+            border-radius: 0 20px 20px 0; 
+            margin-right: 10px; 
+        }
+
+        .submenu-item { padding: 8px 20px 8px 45px; font-size: 12px; color: var(--text-dark); cursor: pointer; }
+        .submenu-item:hover { color: var(--primary-blue); }
+        .submenu-item.active { background: var(--primary-blue); color: white; border-radius: 20px; margin: 2px 10px; font-weight: 600; }
+
+        .main-content { flex: 1; overflow-y: auto; padding: 25px 35px; }
+        .page-content { display: none; }
+        .page-content.active { display: block; }
+        .header-title { font-size: 24px; font-weight: 700; color: #1e3a8a; margin-bottom: 20px; }
+
+        .card { background: white; border-radius: 8px; border: 1px solid var(--border-color); padding: 25px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .field { margin-bottom: 18px; position: relative; }
+        .field label { font-size: 12px; font-weight: 600; display: block; margin-bottom: 8px; color: #374151; }
+        input, select, textarea { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px; outline: none; }
+        
+        .suggest-box { position: absolute; width: 100%; background: white; border: 1px solid var(--border-color); border-radius: 6px; z-index: 100; display: none; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-top: 2px; }
+        .suggest-item { padding: 12px; font-size: 13px; cursor: pointer; border-bottom: 1px solid #f9fafb; }
+        .suggest-item:hover { background: #f3f6fb; color: var(--primary-blue); }
+
+        .btn-save { background: #5c7cfa; color: white; border: none; width: 100%; padding: 15px; border-radius: 6px; font-weight: 700; cursor: pointer; font-size: 14px; margin-top: 10px; }
+        .btn-action { background: var(--accent-blue); color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 8px; }
+
+        .list-card { background: white; border: 1px solid #e5e7eb; border-radius: 12px; margin-bottom: 20px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .list-card-header { background: #f9fafb; padding: 12px 20px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #f1f5f9; }
+        .icon-cal { background: #dbeafe; color: var(--accent-blue); width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+        .header-text .tgl-main { font-weight: 700; font-size: 14px; color: #374151; }
+        .list-card-body { padding: 20px; }
+        .info-grid { display: grid; grid-template-columns: 1.2fr 1.2fr 1fr 1fr; gap: 15px; }
+        .info-group label { color: #9ca3af; display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 11px; }
+        .info-group .val-text { font-weight: 700; color: #1f2937; font-size: 13px; text-transform: uppercase; display: block; }
+        .card-footer { display: flex; justify-content: space-between; align-items: center; padding: 0 20px 20px 20px; }
+        .btn-buka-rm { background: var(--accent-blue); color: white; border: none; padding: 8px 18px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; }
+
+        .kop-container { display: flex; align-items: center; justify-content: center; margin-bottom: 20px; border-bottom: 3px solid #000; padding-bottom: 15px; position: relative; }
+        .kop-logo-left { width: 80px; position: absolute; left: 0; }
+        .kop-logo-right { width: 80px; position: absolute; right: 0; }
+        .kop-text { text-align: center; line-height: 1.4; }
+        .kop-text h3 { margin: 0; font-size: 16px; font-weight: 700; text-transform: uppercase; }
+        .kop-text h2 { margin: 0; font-size: 19px; font-weight: 800; text-transform: uppercase; }
+        .kop-text p { margin: 2px 0; font-size: 11px; }
+
+        .report-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px; border: 1px solid #dee2e6; }
+        .report-table th { background: var(--report-header-blue); color: white; padding: 12px 8px; text-align: center; border: 1px solid #ffffff; font-weight: 600; }
+        .report-table td { padding: 10px; border: 1px solid #dee2e6; text-align: center; }
+        .report-table tbody tr:nth-child(even) { background-color: #f8f9fa; }
+
+        .user-profile { padding: 15px; background: var(--primary-blue); color: white; display: flex; align-items: center; gap: 10px; margin-top: auto; }
+        .empty-state { text-align: center; padding: 40px; color: var(--text-muted); border: 1px dashed var(--border-color); border-radius: 8px; }
+
+        @media print {
+            body { background: white; }
+            .sidebar, .btn-action, .field, select, .header-title, .card-footer { display: none !important; }
+            .main-content { padding: 0; }
+            .card { border: none; box-shadow: none; padding: 0; }
+            .report-table { font-size: 10pt; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="brand">EHR <span style="font-weight:400; font-size:10px; margin-left:5px"></span></div>
+            <div style="font-size:10px; color:#10b981; margin-top:5px">● Online <span style="background:#374151; color:white; padding:2px 5px; border-radius:4px; margin-left:5px">{nomor_versi}</span></div>
+        </div>
+
+        <div class="sidebar-menu">
+            <div class="menu-label">Lapor Om</div>
+            <div class="menu-label">ShareTweets</div>
+            <div class="menu-label">Chat</div>
+            <div class="menu-label">Berita</div>
+            <div class="menu-label">Notifikasi</div>
+            <div class="menu-label">History Log</div>
+            <div class="menu-group open">
+                <div class="menu-label">Transaksi <span class="arrow">▲</span></div>
+                <div class="submenu">
+                    <div class="submenu-item" id="nav-form" onclick="showPage('page-form', this)">Buka Rekam Medis</div>
+                    <div class="submenu-item" id="nav-list" onclick="showPage('page-list', this)">List Buka RM</div>
+                </div>
+            </div>
+            <div class="menu-group open">
+                <div class="menu-label">Laporan <span class="arrow">▲</span></div>
+                <div class="submenu">
+                    <div class="submenu-item active" id="nav-report" onclick="showPage('page-report', this)">Laporan Buka RM</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="user-profile">
+            <div style="width:35px; height:35px; border-radius:50%; background:#abc4ff;"></div>
+            <div style="font-size:11px"><strong>{Nama_user}</strong><br><small>{grup_user}</small></div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div id="page-form" class="page-content">
+            <div class="header-title">Buka Rekam Medis</div>
+            <div class="card">
+                <div class="field">
+                    <label>Pilih Metode Pencarian Pasien</label>
+                    <select id="selMetode" onchange="toggleForm(this.value)">
+                        <option value="rm">Berdasarkan No Rekam Medis</option>
+                        <option value="unit">Berdasarkan Unit & Interval Kunjungan</option>
+                    </select>
+                </div>
+                <div id="inputRM">
+                    <div class="field"><label>No Rekam Medis</label><input type="text" id="inRM" placeholder="Contoh: 100001"></div>
+                </div>
+                <div id="inputUnit" style="display:none">
+                    <div class="field"><label>Unit Pelayanan</label>
+                        <select id="inUnitSel" onchange="applyFilter()">
+                            <option value="Ranap">Ranap</option><option value="IGD">IGD</option><option value="Poliklinik">Poliklinik</option>
+                        </select>
+                    </div>
+                    <div style="display:flex; gap:15px">
+                        <div class="field" style="flex:1"><label>📅 Kunjungan Dari</label><input type="date" id="date1" value="2026-04-01" onchange="applyFilter()"></div>
+                        <div class="field" style="flex:1"><label>📅 Kunjungan Sampai</label><input type="date" id="date2" value="2026-05-02" onchange="applyFilter()"></div>
+                    </div>
+                    <div id="previewText" style="font-size:12px; color:var(--text-muted); margin-bottom:10px"></div>
+                </div>
+                <div class="field">
+                    <label>Cari Pegawai</label>
+                    <input type="text" id="inPegawai" placeholder="Ketik resky yuli..." onkeyup="searchPegawai(this.value)">
+                    <div id="suggestBox" class="suggest-box">
+                        <div class="suggest-item" onclick="setPegawai('RESKY YULIAN PRATAMA PUTRA')">RESKY YULIAN PRATAMA PUTRA</div>
+                    </div>
+                </div>
+                <div style="display:flex; gap:15px">
+                    <div class="field" style="flex:1"><label>Akses Mulai</label><input type="date" id="tglBukaDari" value="2026-05-02"></div>
+                    <div class="field" style="flex:1"><label>Akses Sampai</label><input type="date" id="tglBukaSampai" value="2026-05-05"></div>
+                </div>
+                <div class="field"><label>Alasan Pembukaan</label><textarea id="inAlasan" rows="2" placeholder="Masukkan alasan..."></textarea></div>
+                <button class="btn-save" id="btnMain" onclick="saveSingle()">Simpan Data</button>
+                <button class="btn-save" id="btnBulk" onclick="saveBulk()" style="display:none; background:#10b981;">✅ Simpan Akses Masal</button>
+            </div>
+        </div>
+
+        <div id="page-list" class="page-content">
+            <div class="header-title">Riwayat Buka Rekam Medis</div>
+            <div id="list-container"></div>
+        </div>
+
+        <div id="page-report" class="page-content active">
+            <div class="header-title">Laporan Buka Rekam Medis</div>
+            <div class="card">
+                <div style="display:flex; gap:15px; align-items:flex-end; margin-bottom:20px">
+                    <div class="field" style="flex:1; margin-bottom:0"><label>Dari Tanggal Akses</label><input type="date" id="rep1" value="2026-04-01"></div>
+                    <div class="field" style="flex:1; margin-bottom:0"><label>Sampai Tanggal Akses</label><input type="date" id="rep2" value="2026-05-30"></div>
+                    <button class="btn-action" onclick="filterReport()">🔍</button>
+                    <button class="btn-action" style="background:#28a745" onclick="window.print()">🖨️</button>
+                </div>
+
+                <div id="print-area">
+                    <div class="kop-container">
+                        <div class="kop-logo-left"><img src="logo_kiri.png" alt="Logo Sidoarjo" style="width: 70px;"></div>
+                        <div class="kop-text">
+                            <h3>Pemerintah Kabupaten Sidoarjo</h3>
+                            <h2>Rumah Sakit Umum Daerah<br>R.T. Notopuro Sidoarjo</h2>
+                            <p>Jalan Mojopahit No. 667, Sidoarjo, Jawa Timur 61215</p>
+                            <p>Telepon (031) 8961649, Laman rsudrtnotopuro.sidoarjokab.go.id</p>
+                            <p>Pos-el rsudrtnotopuro@sidoarjokab.go.id</p>
+                        </div>
+                        <div class="kop-logo-right"><img src="logo_kanan.png" alt="Logo rsudrtnotopuro" style="width: 70px;"></div>
+                    </div>
+
+                    <div style="font-weight: 700; color: var(--report-header-blue); font-size: 14px; margin-bottom: 5px;">Laporan Pembukaan Rekam Medis Elektronik</div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px;" id="rep-period">Mei 2026</div>
+
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px;">No</th>
+                                <th>Tgl Akses</th>
+                                <th>No RM</th>
+                                <th>Nama Pasien</th>
+                                <th>Unit</th>
+                                <th>Petugas</th>
+                                <th>Berlaku S/D</th>
+                                <th>Alasan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="report-body"></tbody>
+                    </table>
+                </div>
+                <div id="report-empty" class="empty-state" style="margin-top:15px">Data tidak ditemukan.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const dbPasien = [
+            { rm: "100001", nama: "KIKI FAMILIA", unit: "Ranap", tgl: "2026-04-02" },
+            { rm: "100002", nama: "DINIE YULISTYA", unit: "Ranap", tgl: "2026-04-05" },
+            { rm: "100003", nama: "ALIA CHAERUNISA", unit: "IGD", tgl: "2026-04-10" },
+            { rm: "100004", nama: "AMINATUZ ZUHRIYYAH", unit: "Poliklinik", tgl: "2026-04-12" },
+            { rm: "100005", nama: "ANIS SUHAILA", unit: "Poliklinik", tgl: "2026-04-15" },
+            { rm: "100006", nama: "M WAHYU SETIAWAN", unit: "Ranap", tgl: "2026-04-18" },
+            { rm: "100007", nama: "LAZUARDI AL HAKIM", unit: "IGD", tgl: "2026-04-20" },
+            { rm: "100008", nama: "M DAVID RIZAL", unit: "Poliklinik", tgl: "2026-04-22" },
+            { rm: "100009", nama: "SISKA PUSPITASARI", unit: "Ranap", tgl: "2026-04-25" },
+            { rm: "100010", nama: "JOKO WIDODO", unit: "IGD", tgl: "2026-04-28" },
+            { rm: "100011", nama: "FITRI ANA EFENDI", unit: "Poliklinik", tgl: "2026-04-29" },
+            { rm: "100012", nama: "YUNIAWATI", unit: "Ranap", tgl: "2026-04-30" },
+            { rm: "100013", nama: "MIZATURIQQO", unit: "IGD", tgl: "2026-05-01" },
+            { rm: "100014", nama: "BAMBANG AJI", unit: "Poliklinik", tgl: "2026-05-02" },
+            { rm: "100015", nama: "HERU NUR CAHYO", unit: "Ranap", tgl: "2026-05-02" }
+        ];
+
+        let logHistory = JSON.parse(localStorage.getItem('ehr_final_v1')) || [];
+
+        document.querySelectorAll('.menu-label').forEach(label => {
+            label.addEventListener('click', function() {
+                const group = this.closest('.menu-group');
+                if (!group) return;
+
+                const isOpen = group.classList.toggle('open');
+                
+                const arrow = this.querySelector('.arrow');
+                if (arrow) {
+                    arrow.innerText = isOpen ? '▲' : '▼';
+                }
+            });
+        });
+
+        function toggleForm(val) {
+            document.getElementById('inputRM').style.display = val === 'rm' ? 'block' : 'none';
+            document.getElementById('inputUnit').style.display = val === 'unit' ? 'block' : 'none';
+            document.getElementById('btnMain').style.display = val === 'rm' ? 'block' : 'none';
+            document.getElementById('btnBulk').style.display = val === 'unit' ? 'block' : 'none';
+            if(val === 'unit') applyFilter();
+        }
+
+        function searchPegawai(val) {
+            const box = document.getElementById('suggestBox');
+            if(val.toLowerCase().includes('resky') || val.toLowerCase().includes('yuli')) { box.style.display = 'block'; } else { box.style.display = 'none'; }
+        }
+
+        function setPegawai(name) {
+            document.getElementById('inPegawai').value = name;
+            document.getElementById('suggestBox').style.display = 'none';
+        }
+
+        function applyFilter() {
+            const unit = document.getElementById('inUnitSel').value;
+            const d1 = document.getElementById('date1').value;
+            const d2 = document.getElementById('date2').value;
+            const filtered = dbPasien.filter(p => p.unit === unit && p.tgl >= d1 && p.tgl <= d2);
+            document.getElementById('previewText').innerHTML = `Ditemukan <b>${filtered.length}</b> kunjungan pasien terfilter otomatis.`;
+        }
+
+        function saveSingle() {
+            const rm = document.getElementById('inRM').value;
+            const p = dbPasien.find(x => x.rm === rm);
+            if(!p) return alert("Nomor RM tidak ditemukan di database demo!");
+            processSave(p);
+        }
+
+        function saveBulk() {
+            const unit = document.getElementById('inUnitSel').value;
+            const d1 = document.getElementById('date1').value;
+            const d2 = document.getElementById('date2').value;
+            const filtered = dbPasien.filter(p => p.unit === unit && p.tgl >= d1 && p.tgl <= d2);
+            if(filtered.length === 0) return alert("Data kunjungan terfilter kosong!");
+            filtered.forEach(p => processSave(p, false));
+            alert("Seluruh akses masal berhasil disimpan.");
+            showPage('page-list', document.getElementById('nav-list'));
+        }
+
+        function processSave(p, redirect = true) {
+            const entry = {
+                ...p,
+                petugas: document.getElementById('inPegawai').value || "Superadmin",
+                alasan: document.getElementById('inAlasan').value || "-",
+                tglSampai: document.getElementById('tglBukaSampai').value,
+                tglAkses: new Date().toISOString().split('T')[0]
+            };
+            logHistory.unshift(entry);
+            localStorage.setItem('ehr_final_v1', JSON.stringify(logHistory));
+            if(redirect) showPage('page-list', document.getElementById('nav-list'));
+        }
+
+        function renderList() {
+            const container = document.getElementById('list-container');
+            const today = new Date().toISOString().split('T')[0];
+            const activeLogs = logHistory.filter(i => i.tglSampai >= today);
+            if (activeLogs.length === 0) {
+                container.innerHTML = `<div class="empty-state">Belum ada rekam medis yang terbuka/aktif.</div>`;
+                return;
+            }
+            container.innerHTML = activeLogs.map(i => `
+                <div class="list-card">
+                    <div class="list-card-header">
+                        <div class="icon-cal">📅</div>
+                        <div class="header-text"><div class="tgl-main">Akses: ${i.tglAkses}</div><div class="no-ref">Petugas: ${i.petugas}</div></div>
+                    </div>
+                    <div class="list-card-body">
+                        <div class="info-grid">
+                            <div class="info-group"><label>Unit</label><span class="val-text">${i.unit}</span></div>
+                            <div class="info-group"><label>Nama</label><span class="val-text">${i.nama}</span></div>
+                            <div class="info-group"><label>No RM</label><span class="val-text">${i.rm}</span></div>
+                            <div class="info-group"><label>Kunjungan</label><span class="val-text">${i.tgl}</span></div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div style="font-size:11px; color:#ef4444">Aktif s/d: <b>${i.tglSampai}</b></div>
+                        <button class="btn-buka-rm">Buka RM</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterReport() {
+            const s = document.getElementById('rep1').value;
+            const e = document.getElementById('rep2').value;
+            const filtered = logHistory.filter(i => i.tglAkses >= s && i.tglAkses <= e);
+            const body = document.getElementById('report-body');
+            const empty = document.getElementById('report-empty');
+            
+            const opt = { year: 'numeric', month: 'long' };
+            document.getElementById('rep-period').innerText = new Date(s).toLocaleDateString('id-ID', opt);
+
+            if(filtered.length === 0) {
+                body.innerHTML = "";
+                empty.style.display = "block";
+            } else {
+                empty.style.display = "none";
+                body.innerHTML = filtered.map((i, idx) => `
+                    <tr>
+                        <td>${idx + 1}</td>
+                        <td>${i.tglAkses}</td>
+                        <td>${i.rm}</td>
+                        <td style="text-align:left;">${i.nama}</td>
+                        <td>${i.unit}</td>
+                        <td>${i.petugas}</td>
+                        <td>${i.tglSampai}</td>
+                        <td style="text-align:left; font-size:10px; color:#6b7280;">${i.alasan}</td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        function showPage(id, el) {
+            document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            document.querySelectorAll('.submenu-item').forEach(s => s.classList.remove('active'));
+            el.classList.add('active');
+            if(id === 'page-list') renderList();
+            if(id === 'page-report') filterReport();
+        }
+        
+        renderList();
+    </script>
+</body>
+</html>
